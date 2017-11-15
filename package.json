@@ -7,10 +7,6 @@
   "author": "Shu Ding",
   "license": "MIT",
   "dependencies": {
-    "cheerio": "^1.0.0-rc.2",
-    "fs": "^0.0.1-security",
-    "puppeteer": "^0.13.0",
-    "request": "^2.83.0",
-    "tabletojson": "^0.6.0"
+    "puppeteer": "^0.13.0"
   }
 }

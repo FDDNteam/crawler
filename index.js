@@ -1,48 +1,70 @@
 // Chrome!
 const puppeteer = require('puppeteer')
 
-// table to json
-const tabletojson = require('tabletojson')
-
+// file system
 const fs = require('fs')
 
-// main
-;(async () => {
-  // 1. open the browser
-  const browser = await puppeteer.launch({ ignoreHTTPSErrors: true })
+async function queryDate(browser, date) {
+  console.log('start ', date, new Date())
 
-  // 2. open a new page
+  // open a new page
   const page = await browser.newPage()
 
-  // 3. set the screen size (a webpage may look different in different sizes)
+  // set the screen size (a webpage may look different in different sizes)
   page.setViewport({ width: 1080, height: 768 })
 
-  // 5. goto 12306, wait for load
+  // goto 12306, wait for load
   await page.goto('https://kyfw.12306.cn/otn/index/init', { waitUntil: 'load' })
 
-  // 6. select the stations
+  // select the stations
   await page.click('#fromStationText')
   await page.click('#ul_list1 > li:nth-child(1)') // 北京
   await page.click('#toStationText')
   await page.click('#ul_list1 > li:nth-child(2)') // 上海
 
-  // 7. select the date
+  // select the nth date button
   await page.click('#train_date')
-  await page.click(
-    'body > div.cal-wrap > div:nth-child(1) > div.cal-cm > div:nth-child(30) > div'
-  ) // 11.30
+  const dates = await page.$$(
+    'body > div.cal-wrap > div:nth-child(1) > div.cal-cm > div > div'
+  )
+  await dates[date - 1].click()
 
-  // 8. click the "search" button
+  // click the "search" button
   await page.click('#a_search_ticket')
 
-  // 9. (it takes seconds to authorize) wait for page change
+  // (it takes seconds to authorize) wait for page change
   await page.waitForNavigation()
 
-  // 10. Get the JSON, save it
-  const table = await page.$eval('#t-list > table', e => e.outerHTML)
-  const json = tabletojson.convert(table)
-  fs.writeFileSync('data.json', JSON.stringify(json, null, 2))
+  // Get the JSON, parse it
+  const table = await page.$$eval('#t-list > table > tbody > tr', trs =>
+    trs
+      .map(e => e.innerText.replace(/\n/g, '\t'))
+      .filter(t => t.length)
+      .map(row => row.split('\t'))
+  )
 
-  // 11. close the browser
+  console.log('finish', date, new Date())
+  return table
+}
+
+// main
+;(async () => {
+  // open the browser (note the 12306 site needs ignoreHTTPSErrors...)
+  const browser = await puppeteer.launch({ ignoreHTTPSErrors: true })
+
+  // add tasks (query dates from 16 to 20)
+  const tasks = []
+  for (let i = 16; i <= 20; ++i) {
+    // no blocking since there's no `await`
+    tasks.push(queryDate(browser, i))
+  }
+
+  // start in parallel
+  const data = await Promise.all(tasks)
+
+  // save as JSON
+  fs.writeFileSync('data.json', JSON.stringify(data, null, 2))
+
+  // close the browser
   await browser.close()
 })()
