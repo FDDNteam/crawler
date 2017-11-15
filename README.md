@@ -12,3 +12,6 @@ P.S. to get the `selector path` of a webpage element (i.e. `'#t-list > table > t
 1. install (latest) node: [https://nodejs.org/](https://nodejs.org/)
 2. run `npm install` to install dependencies
 3. run `node index.js`
+
+## puppeteer
+API: https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md
